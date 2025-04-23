@@ -7,9 +7,9 @@ WORKDIR /home/node
 RUN npm install -g pnpm
 
 # Files required by pnpm install
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --prod
 
 COPY --chown=node:node . .
 

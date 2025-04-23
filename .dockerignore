@@ -1,0 +1,6 @@
+# flyctl launch added from .gitignore
+**/.env
+**/node_modules
+**/pnpm-lock.yaml
+**/yarn.lock
+fly.toml
