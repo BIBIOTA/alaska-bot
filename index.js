@@ -97,7 +97,7 @@ app.post('/alaska/multiple', jsonParser, async(req, response) => {
     const { departureDate, departure, arrival } = schedule;
     momentDepartureDate = moment(departureDate);
     const ttl = momentDepartureDate.diff(moment(), 'seconds');
-    await client.set(`alaska:schedules:${momentDepartureDate.format('YYYYMMDD')}:${departure}:${arrival}`, JSON.stringify(req.body), {
+    await client.set(`alaska:schedules:${momentDepartureDate.format('YYYYMMDD')}:${departure}:${arrival}`, JSON.stringify(schedule), {
       EX: ttl,
     });
   });
