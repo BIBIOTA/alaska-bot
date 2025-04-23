@@ -20,7 +20,7 @@ moment.locale('zh-tw');
 const { slack } = require('./slack');
 
 new CronJob(
-  '* * * * *',
+  '* 10,22 * * *',
   async function() {
     const schedules = await client.keys('alaska:schedules:*');
 
