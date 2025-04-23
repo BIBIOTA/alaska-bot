@@ -1,4 +1,4 @@
-FROM node:22-alpine as builder
+FROM node:18-alpine as builder
 
 ENV NODE_ENV build
 
@@ -15,7 +15,7 @@ COPY --chown=node:node . .
 
 # ---
 
-FROM node:22-alpine
+FROM node:18-alpine
 
 ENV NODE_ENV production
 
