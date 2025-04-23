@@ -20,7 +20,7 @@ moment.locale('zh-tw');
 const { slack } = require('./slack');
 
 new CronJob(
-  '* 10,22 * * *',
+  '0 10,22 * * *',
   async function() {
     const schedules = await client.keys('alaska:schedules:*');
 
@@ -86,6 +86,25 @@ app.post('/alaska', jsonParser, async(req, response) => {
   response.json({
     status: 'success',
     message: 'Add Alaska schedule. Expired in ' + expiredDays + ' days',
+    data: req.body,
+  });
+});
+
+app.post('/alaska/multiple', jsonParser, async(req, response) => {
+  const schdules = req.body;
+
+  schdules.forEach(async(schedule) => {
+    const { departureDate, departure, arrival } = schedule;
+    momentDepartureDate = moment(departureDate);
+    const ttl = momentDepartureDate.diff(moment(), 'seconds');
+    await client.set(`alaska:schedules:${momentDepartureDate.format('YYYYMMDD')}:${departure}:${arrival}`, JSON.stringify(req.body), {
+      EX: ttl,
+    });
+  });
+  
+  response.json({
+    status: 'success',
+    message: 'Add Alaska multiple schedules',
     data: req.body,
   });
 });
