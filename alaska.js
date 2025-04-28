@@ -1,5 +1,5 @@
 
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 require('dotenv').config();
 const { slack } = require('./slack');
 
@@ -12,7 +12,17 @@ const TICKET_CLASS_MAPPING = {
 const checkAlaskaSchedules = (async (schedule) => {
 
   const browser = await puppeteer.launch({
-      headless: process.env.HEADLESS === 'true',
+      headless: 'new',
+      executablePath: process.env.CHROME_EXECUTABLE_PATH || '/usr/bin/chromium',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process'
+      ],
+      protocolTimeout: 60000,
   });
 
   const alaskaSearchUrl = 'https://www.alaskaair.com/search/results';
@@ -37,11 +47,15 @@ const checkAlaskaSchedules = (async (schedule) => {
     });
 
     await page.goto(searchConditionUrl, {timeout: 20000, visible: true});
+    
+    const pageResult = await page.waitForSelector('.resultsTableHeader', {timeout: 20000}).catch(async () => {
+      return await page.evaluate(() => {
+        const errorElement = document.querySelector('.no-flights');
+        return errorElement;
+      });
+    });
 
-    await page.waitForSelector('.resultsTableHeader', {timeout: 20000});
-    const noFlightElement = await page.$('.no-flights');
-  
-    if (noFlightElement) {
+    if (!pageResult) {
       return flightData;
     }
 
@@ -121,6 +135,7 @@ const checkAlaskaSchedules = (async (schedule) => {
 
   } catch (error) {
     console.log(error);
+    
     slack.send('Error: ' + error.message + '\n' + 'url:' + searchConditionUrl);
     browser.close();
 
