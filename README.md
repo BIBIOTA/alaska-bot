@@ -35,6 +35,32 @@ curl -X POST http://localhost:3000/alaska \
 }'
 ```
 
+### 2. 通知設定
+
+Alaska Bot 支援 LINE 和 Slack 雙通知管道，可以獨立開關：
+
+**LINE 通知設定：**
+1. 在 [LINE Developers Console](https://developers.line.biz/) 建立 Messaging API 頻道
+2. 取得 Channel Access Token
+3. 取得您的 LINE User ID（可使用 LINE Bot 取得）
+4. 在 `.env` 中設定：
+   ```bash
+   ENABLE_LINE_NOTIFY=true
+   LINE_CHANNEL_ACCESS_TOKEN=your_token
+   LINE_USER_ID=your_user_id
+   ```
+
+**Slack 通知設定：**
+```bash
+ENABLE_SLACK_NOTIFY=true
+MY_SLACK_WEBHOOK_URL=your_webhook_url
+```
+
+**注意：**
+- 可以同時啟用兩個通知管道
+- 如果只設定 `MY_SLACK_WEBHOOK_URL` 而不設定 `ENABLE_SLACK_NOTIFY`，Slack 會自動啟用（向後相容）
+- LINE 需要明確設定 `ENABLE_LINE_NOTIFY=true` 才會啟用
+
 ---
 
 ## 專案架構
@@ -48,7 +74,8 @@ curl -X POST http://localhost:3000/alaska \
 - **Puppeteer**：用於模擬瀏覽器操作，爬取航班資訊。
 - **Redis**：用於儲存航班排程資料。
 - **Cron**：定期執行航班檢查任務。
-- **Slack Notify**：用於發送通知至 Slack。
+- **LINE Messaging API**：用於發送 LINE 通知。
+- **Slack Webhook**：用於發送 Slack 通知。
 
 ---
 
