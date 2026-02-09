@@ -17,7 +17,7 @@ client.connect().then(() => {
 });
 const moment = require('moment');
 moment.locale('zh-tw');
-const { slack } = require('./slack');
+const notify = require('./notify');
 
 new CronJob(
   '0 10,22 * * *',
@@ -61,7 +61,7 @@ new CronJob(
         }
   
         if (message) {
-          slack.send(message);
+          notify.send(message);
         }  
       }
     }
@@ -115,4 +115,4 @@ app.get('', (request, response) => {
   });
 });
 
-server.listen(process.env.PORT, () => slack.send('Start !'));
+server.listen(process.env.PORT, () => notify.send('Start !'));
