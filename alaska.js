@@ -12,7 +12,7 @@ const TICKET_CLASS_MAPPING = {
 const checkAlaskaSchedules = (async (schedule) => {
 
   const browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       executablePath: process.env.CHROME_EXECUTABLE_PATH || '/usr/bin/chromium',
       args: [
         '--no-sandbox',
@@ -46,8 +46,8 @@ const checkAlaskaSchedules = (async (schedule) => {
       navigator.__proto__ = newProto;
     });
 
-    await page.goto(searchConditionUrl, {timeout: 20000, visible: true});
-    
+    await page.goto(searchConditionUrl, {timeout: 20000, waitUntil: 'networkidle2'});
+
     const pageResult = await page.waitForSelector('.resultsTableHeader', {timeout: 20000}).catch(async () => {
       return await page.evaluate(() => {
         const errorElement = document.querySelector('.no-flights');
