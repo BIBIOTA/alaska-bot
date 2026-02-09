@@ -71,25 +71,24 @@ const checkAlaskaSchedules = (async (schedule) => {
 
         fareButtons.forEach(button => {
           const spans = button.querySelectorAll('span');
-          if (spans.length < 2) return;
+          if (spans.length < 6) return;
 
-          const classNameEl = spans[0]; // "Main", "Business", "Premium", etc.
-          const milesEl = spans[1]; // "7.5k", "15k", etc.
+          // spans[0]: "Main", "Business", etc.
+          // spans[1]: "7.5k", "15k", etc.
+          // spans[5]: "$29", "$10", etc.
+          const className = spans[0] ? spans[0].textContent.trim() : null;
+          const miles = spans[1] ? spans[1].textContent.trim() : null;
+          const taxText = spans[5] ? spans[5].textContent.trim() : null;
 
-          // 從價格行提取稅費
-          const priceLine = button.querySelector('.price-line');
-          const priceText = priceLine ? priceLine.textContent.trim() : '';
-
-          const className = classNameEl ? classNameEl.textContent.trim() : null;
-          const miles = milesEl ? milesEl.textContent.trim() : null;
-
-          // 從 "7.5k points pts + $29" 提取 "$29"
-          const taxMatch = priceText.match(/\$(\d+)/);
-          const tax = taxMatch ? taxMatch[1] : null;
-
-          if (!className || !miles || !tax) {
+          if (!className || !miles || !taxText) {
             return;
           }
+
+          // 提取稅費數字 ($29 -> 29)
+          const taxMatch = taxText.match(/\$?(\d+)/);
+          const tax = taxMatch ? taxMatch[1] : null;
+
+          if (!tax) return;
 
           // 將類別名稱轉換為小寫 (Main -> economy, Business -> business, Premium -> premium)
           let classKey = className.toLowerCase();
