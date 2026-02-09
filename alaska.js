@@ -64,7 +64,7 @@ const checkAlaskaSchedules = (async (schedule) => {
       const output = [];
   
       rows.forEach(row => {
-        const flightInfo = row.querySelector('p.footnote-description');
+        const flightInfo = row.querySelector('p');
         const flightNumber = flightInfo ? flightInfo.textContent.split('—')[0].trim() : 'N/A';
         const fareButtons = row.querySelectorAll('div[id^="Fare_"] button.valuetile');
         const cabins = [];
