@@ -73,10 +73,20 @@ new CronJob(
 
 app.post('/alaska', jsonParser, async(req, response) => {
   const { departureDate, departure, arrival } = req.body;
-  
+
   momentDepartureDate = moment(departureDate);
 
   const ttl = momentDepartureDate.diff(moment(), 'seconds');
+
+  if (ttl <= 0) {
+    response.status(400).json({
+      status: 'error',
+      message: 'Departure date is in the past',
+      data: req.body,
+    });
+    return;
+  }
+
   await client.set(`alaska:schedules:${momentDepartureDate.format('YYYYMMDD')}:${departure}:${arrival}`, JSON.stringify(req.body), {
     EX: ttl,
   });
@@ -93,15 +103,18 @@ app.post('/alaska', jsonParser, async(req, response) => {
 app.post('/alaska/multiple', jsonParser, async(req, response) => {
   const schdules = req.body;
 
-  schdules.forEach(async(schedule) => {
+  for (const schedule of schdules) {
     const { departureDate, departure, arrival } = schedule;
     momentDepartureDate = moment(departureDate);
     const ttl = momentDepartureDate.diff(moment(), 'seconds');
-    await client.set(`alaska:schedules:${momentDepartureDate.format('YYYYMMDD')}:${departure}:${arrival}`, JSON.stringify(schedule), {
-      EX: ttl,
-    });
-  });
-  
+
+    if (ttl > 0) {
+      await client.set(`alaska:schedules:${momentDepartureDate.format('YYYYMMDD')}:${departure}:${arrival}`, JSON.stringify(schedule), {
+        EX: ttl,
+      });
+    }
+  }
+
   response.json({
     status: 'success',
     message: 'Add Alaska multiple schedules',
