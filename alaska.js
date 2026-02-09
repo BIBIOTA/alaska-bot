@@ -40,6 +40,10 @@ const checkAlaskaSchedules = (async (schedule) => {
   try {
     const page = await browser.newPage();
 
+    // 設置 viewport 和 user agent 以確保獲得桌面版頁面
+    await page.setViewport({ width: 1920, height: 1080 });
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
     await page.evaluateOnNewDocument(() => {
       const newProto = navigator.__proto__;
       delete newProto.webdriver;
