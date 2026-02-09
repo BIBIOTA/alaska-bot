@@ -1,7 +1,7 @@
 
 const puppeteer = require("puppeteer-core");
 require('dotenv').config();
-const { slack } = require('./slack');
+const notify = require('./notify');
 
 const TICKET_CLASS_MAPPING = {
   'economy': 'Refundable Main',
@@ -136,7 +136,7 @@ const checkAlaskaSchedules = (async (schedule) => {
   } catch (error) {
     console.log(error);
     
-    slack.send('Error: ' + error.message + '\n' + 'url:' + searchConditionUrl);
+    notify.send('Error: ' + error.message + '\n' + 'url:' + searchConditionUrl);
     browser.close();
 
     return flightData;
