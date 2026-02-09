@@ -68,6 +68,8 @@ MY_SLACK_WEBHOOK_URL=your_webhook_url
 ### 主要檔案
 - **index.js**：專案的入口檔案，負責啟動服務、設定 Cron 任務以及處理 API 請求。
 - **alaska.js**：負責爬取阿拉斯加航空的航班資訊，並根據條件篩選航班。
+- **notify.js**：統一的通知管理器，負責協調 LINE 和 Slack 通知。
+- **line.js**：封裝 LINE 通知功能。
 - **slack.js**：封裝 Slack 通知功能。
 
 ### 主要技術
