@@ -1,4 +1,4 @@
-const { checkAlaskaSchedules } = require('./alaska');
+const { checkAlaskaSchedules, checkAlaskaFlexibleDates } = require('./alaska');
 require('dotenv').config();
 const CronJob = require('cron').CronJob;
 const express = require('express');
@@ -118,6 +118,46 @@ app.post('/alaska/multiple', jsonParser, async(req, response) => {
   response.json({
     status: 'success',
     message: 'Add Alaska multiple schedules',
+    data: req.body,
+  });
+});
+
+app.post('/alaska/flexible', jsonParser, async(req, response) => {
+  const { startDate, endDate, departure, arrival } = req.body;
+
+  const momentEndDate = moment(endDate);
+  const ttl = momentEndDate.diff(moment(), 'seconds');
+
+  if (ttl <= 0) {
+    response.status(400).json({
+      status: 'error',
+      message: 'End date is in the past',
+      data: req.body,
+    });
+    return;
+  }
+
+  const momentStartDate = moment(startDate);
+  if (momentStartDate.isAfter(momentEndDate)) {
+    response.status(400).json({
+      status: 'error',
+      message: 'Start date is after end date',
+      data: req.body,
+    });
+    return;
+  }
+
+  const key = `alaska:flexible:${momentStartDate.format('YYYYMMDD')}:${momentEndDate.format('YYYYMMDD')}:${departure}:${arrival}`;
+
+  await client.set(key, JSON.stringify(req.body), {
+    EX: ttl,
+  });
+
+  const expiredDays = momentEndDate.diff(moment(), 'days');
+
+  response.json({
+    status: 'success',
+    message: 'Add Alaska flexible schedule. Expired in ' + expiredDays + ' days',
     data: req.body,
   });
 });
