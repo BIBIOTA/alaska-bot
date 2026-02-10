@@ -65,6 +65,41 @@ new CronJob(
         }  
       }
     }
+
+    // Process flexible date schedules
+    const flexSchedules = await client.keys('alaska:flexible:*');
+
+    if (flexSchedules.length > 0) {
+      for (let i = 0; i < flexSchedules.length; i++) {
+        const schedule = await client.get(flexSchedules[i]);
+        const parts = flexSchedules[i].split(':');
+        const endDateStr = parts[3]; // YYYYMMDD
+
+        if (moment(endDateStr, 'YYYYMMDD').isBefore(moment())) {
+          await client.del(flexSchedules[i]);
+          continue;
+        }
+
+        const flexibleData = await checkAlaskaFlexibleDates(schedule);
+
+        console.log({ flexible: true, ...flexibleData });
+
+        let message = '';
+        if (flexibleData.dates.length > 0) {
+          message += `[Flexible ${flexibleData.startDate} ~ ${flexibleData.endDate} ${flexibleData.departure} => ${flexibleData.arrival}]:\n`;
+          flexibleData.dates.forEach((day) => {
+            const dateStr = moment(day.date).format('MM/DD');
+            const miles = day.miles >= 1000 ? (day.miles / 1000) + 'k' : day.miles;
+            message += `${dateStr}: ${miles} miles +$${day.tax}\n`;
+          });
+          message += `Link: ${flexibleData.url}\n`;
+        }
+
+        if (message) {
+          notify.send(message);
+        }
+      }
+    }
   },
   null,
   true,
