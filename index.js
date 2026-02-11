@@ -22,7 +22,10 @@ const notify = require('./notify');
 new CronJob(
   '0 10,22 * * *',
   async function() {
+    // --- Fixed date schedules ---
     const schedules = await client.keys('alaska:schedules:*');
+    // routeKey -> [{ date, flightData }]
+    const fixedRouteResults = {};
 
     const sortedSchedules = schedules.sort((a, b) => {
       const dateA = a.split(':')[2];
@@ -30,75 +33,88 @@ new CronJob(
       return moment(dateA).diff(moment(dateB));
     });
 
-    if (sortedSchedules.length > 0) {
-      for (let i = 0; i < schedules.length; i++) {
-        const schedule = await client.get(schedules[i]);
-        const date = schedules[i].split(':')[2];
-        if (moment(date).isBefore(moment())) {
-          await client.del(schedules[i]);
-          continue;
+    for (const key of sortedSchedules) {
+      const schedule = await client.get(key);
+      const date = key.split(':')[2];
+      if (moment(date).isBefore(moment())) {
+        await client.del(key);
+        continue;
+      }
+
+      const flightData = await checkAlaskaSchedules(schedule);
+      console.log({ date, ...flightData });
+
+      if (flightData.flights.length > 0) {
+        const routeKey = `${flightData.departure}-${flightData.arrival}`;
+        if (!fixedRouteResults[routeKey]) {
+          fixedRouteResults[routeKey] = [];
         }
-
-        const flightData = await checkAlaskaSchedules(schedule);
-
-        console.log({date, ...flightData});
-
-        let message = '';
-        if (flightData.flights.length > 0) {
-          message += `[${date} ${flightData.departure} => ${flightData.arrival}]: \n`;
-          flightData.flights.forEach((flight) => {
-            message += `Flight: ${flight.flight}\n`;
-            let classMiles = 'Miles:\n';
-            flight.cabins.map(cabin => {
-              const className = cabin.class.charAt(0).toUpperCase() + cabin.class.slice(1);
-              const miles = cabin.miles + ' miles';
-              const tax = cabin.tax + ' USD';
-              classMiles += `${className}: ${miles} ${tax} \n`;
-            });
-            message += classMiles;
-          });
-          message += `Link: ${flightData.url}\n`;
-        }
-  
-        if (message) {
-          notify.send(message);
-        }  
+        fixedRouteResults[routeKey].push({ date, flightData });
       }
     }
 
-    // Process flexible date schedules
-    const flexSchedules = await client.keys('alaska:flexible:*');
+    // Send one message per route
+    for (const [routeKey, results] of Object.entries(fixedRouteResults)) {
+      const [dep, arr] = routeKey.split('-');
+      let message = `[${dep} → ${arr}] 找到符合條件航班：\n`;
 
-    if (flexSchedules.length > 0) {
-      for (let i = 0; i < flexSchedules.length; i++) {
-        const schedule = await client.get(flexSchedules[i]);
-        const parts = flexSchedules[i].split(':');
-        const endDateStr = parts[3]; // YYYYMMDD
-
-        if (moment(endDateStr, 'YYYYMMDD').isBefore(moment())) {
-          await client.del(flexSchedules[i]);
-          continue;
-        }
-
-        const flexibleData = await checkAlaskaFlexibleDates(schedule);
-
-        console.log({ flexible: true, ...flexibleData });
-
-        let message = '';
-        if (flexibleData.dates.length > 0) {
-          message += `[Flexible ${flexibleData.startDate} ~ ${flexibleData.endDate} ${flexibleData.departure} => ${flexibleData.arrival}]:\n`;
-          flexibleData.dates.forEach((day) => {
-            const dateStr = moment(day.date).format('MM/DD');
-            const miles = day.miles >= 1000 ? (day.miles / 1000) + 'k' : day.miles;
-            message += `${dateStr}: ${miles} miles +$${day.tax}\n`;
+      for (const { date, flightData } of results) {
+        message += `\n📅 ${date}\n`;
+        flightData.flights.forEach((flight) => {
+          flight.cabins.forEach(cabin => {
+            const className = cabin.class.charAt(0).toUpperCase() + cabin.class.slice(1);
+            message += `  ${flight.flight} | ${className}: ${cabin.miles} miles +$${cabin.tax}\n`;
           });
-          message += `Link: ${flexibleData.url}\n`;
-        }
-
-        if (message) {
-          notify.send(message);
-        }
+        });
       }
+
+      message += `\n🔗 ${results[0].flightData.url}\n`;
+      notify.send(message);
+    }
+
+    // --- Flexible date schedules ---
+    const flexSchedules = await client.keys('alaska:flexible:*');
+    // routeKey -> [{ flexibleData }]
+    const flexRouteResults = {};
+
+    for (const key of flexSchedules) {
+      const schedule = await client.get(key);
+      const parts = key.split(':');
+      const endDateStr = parts[3];
+
+      if (moment(endDateStr, 'YYYYMMDD').isBefore(moment())) {
+        await client.del(key);
+        continue;
+      }
+
+      const flexibleData = await checkAlaskaFlexibleDates(schedule);
+      console.log({ flexible: true, ...flexibleData });
+
+      if (flexibleData.dates.length > 0) {
+        const routeKey = `${flexibleData.departure}-${flexibleData.arrival}`;
+        if (!flexRouteResults[routeKey]) {
+          flexRouteResults[routeKey] = [];
+        }
+        flexRouteResults[routeKey].push(flexibleData);
+      }
+    }
+
+    // Send one message per route
+    for (const [routeKey, results] of Object.entries(flexRouteResults)) {
+      const [dep, arr] = routeKey.split('-');
+      let message = `[Flexible ${dep} → ${arr}] 找到符合條件日期：\n`;
+
+      for (const flexibleData of results) {
+        message += `\n📅 ${flexibleData.startDate} ~ ${flexibleData.endDate}\n`;
+        flexibleData.dates.forEach((day) => {
+          const dateStr = moment(day.date, 'YYYY-MM-DD').format('MM/DD');
+          const miles = day.miles >= 1000 ? (day.miles / 1000) + 'k' : day.miles;
+          message += `  ${dateStr}: ${miles} miles +$${day.tax}\n`;
+        });
+      }
+
+      message += `\n🔗 ${results[0].url}\n`;
+      notify.send(message);
     }
   },
   null,

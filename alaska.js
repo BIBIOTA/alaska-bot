@@ -258,12 +258,12 @@ const checkAlaskaFlexibleDates = (async (schedule) => {
 
     // Filter by date range and maximumMiles
     flexibleData.dates = allDays.filter(day => {
-      const dayMoment = moment(day.date, 'MMM D, YYYY');
+      const dayMoment = moment(day.date, 'MMM D, YYYY', 'en');
       if (dayMoment.isBefore(start, 'day') || dayMoment.isAfter(end, 'day')) return false;
       if (day.miles > maximumMiles) return false;
       return true;
     }).map(day => ({
-      date: moment(day.date, 'MMM D, YYYY').format('YYYY-MM-DD'),
+      date: moment(day.date, 'MMM D, YYYY', 'en').format('YYYY-MM-DD'),
       miles: day.miles,
       tax: day.tax,
     }));
