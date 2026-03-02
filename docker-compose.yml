@@ -1,0 +1,25 @@
+services:
+  alaska-bot:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - CHROME_EXECUTABLE_PATH=/usr/bin/chromium
+      - HEADLESS=true
+      - PORT=8080
+      - NODE_ENV=production
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
